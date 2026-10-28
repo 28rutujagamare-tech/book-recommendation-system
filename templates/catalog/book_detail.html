@@ -1,0 +1,94 @@
+{% extends "catalog/base.html" %}
+{% block title %}{{ book.title }} — ReadMatch{% endblock %}
+{% block content %}
+<section class="detail-wrap">
+    <a class="back-link" href="{% url 'catalog:home' %}?genre={{ book.genre.name|urlencode }}">← Back to {{ book.genre.name }}</a>
+    <div class="detail-layout">
+        <div class="detail-cover-wrap">
+            {% if book.cover_url %}
+                <img class="detail-cover" src="{{ book.cover_url }}" alt="Cover of {{ book.title }}">
+            {% else %}
+                <div class="detail-cover cover-art cover-plum">
+                    <span class="cover-kicker">{{ book.genre.name }}</span><strong>{{ book.title }}</strong><span class="cover-author">{{ book.author }}</span><i aria-hidden="true"></i>
+                </div>
+            {% endif %}
+        </div>
+        <div class="detail-copy">
+            <div class="book-genres">
+                <a class="genre-label" href="{% url 'catalog:home' %}?genre={{ book.genre.name|urlencode }}">{{ book.genre.name }}</a>
+                {% for genre in book.additional_genres.all %}
+                    <a class="genre-label" href="{% url 'catalog:home' %}?genre={{ genre.name|urlencode }}">{{ genre.name }}</a>
+                {% endfor %}
+            </div>
+            <h1>{{ book.title }}</h1>
+            <p class="detail-author">by {{ book.author }}{% if book.publication_year %} <span>· {{ book.publication_year }}</span>{% endif %}</p>
+            <div class="detail-rating"><span class="star">★</span> {{ book.rating }} <span>editor rating</span></div>
+            <div class="detail-rule"></div>
+            <p class="detail-description">{{ book.description }}</p>
+            <p class="book-facts">{{ book.get_language_display }}{% if book.page_count %} · {{ book.page_count }} pages{% endif %}</p>
+            {% if book.themes.all %}
+                <div class="detail-themes"><span>THEMES</span>{% for theme in book.themes.all %}<span class="theme-chip">{{ theme.name }}</span>{% endfor %}</div>
+            {% endif %}
+            <p class="detail-pick">Picked for readers who love <strong>{{ book.genre.name }}</strong>.</p>
+        </div>
+    </div>
+    <section class="reviews" id="reviews">
+        <div class="reviews-heading">
+            <div>
+                <p class="eyebrow">FROM THE READING COMMUNITY</p>
+                <h2>Reader reviews <span>({{ review_count }})</span></h2>
+            </div>
+        </div>
+        <div class="review-layout">
+            <div class="review-list">
+                {% for review in reviews %}
+                    <article class="review-card">
+                        <div class="review-card-heading">
+                            <strong>{{ review.user.username }}</strong>
+                            <span class="review-stars" aria-label="{{ review.rating }} out of 5 stars">{% for _ in "12345" %}{% if forloop.counter <= review.rating %}★{% else %}☆{% endif %}{% endfor %}</span>
+                        </div>
+                        <p>{{ review.body|linebreaksbr }}</p>
+                        <time datetime="{{ review.updated_at|date:'c' }}">Updated {{ review.updated_at|date:"N j, Y" }}</time>
+                    </article>
+                {% empty %}
+                    <div class="review-empty">No reviews yet. Be the first to share what you thought.</div>
+                {% endfor %}
+            </div>
+            <div class="review-form-card">
+                <h3>{% if user.is_authenticated and review_form.instance.pk %}Update your review{% else %}Share your thoughts{% endif %}</h3>
+                {% if user.is_authenticated %}
+                    <form action="{% url 'catalog:submit_review' book.slug %}" method="post" class="account-form">
+                        {% csrf_token %}
+                        {% for field in review_form %}
+                            <div class="form-field">
+                                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                {{ field }}
+                                {% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+                            </div>
+                        {% endfor %}
+                        <button class="primary-button" type="submit">Save review <span aria-hidden="true">→</span></button>
+                    </form>
+                    <p class="review-help">You can leave one review per book and update it any time.</p>
+                {% else %}
+                    <p class="review-help">Log in or create an account to leave a review.</p>
+                    <div class="review-auth-links">
+                        <a class="primary-button" href="{% url 'catalog:login' %}?next={{ request.path|urlencode }}%23reviews">Log in</a>
+                        <a class="secondary-button" href="{% url 'catalog:signup' %}">Create account</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+    {% if more_from_genre %}
+        <div class="more-books">
+            <p class="eyebrow">KEEP EXPLORING</p>
+            <h2>More from this shelf</h2>
+            <div class="more-book-list">
+                {% for other in more_from_genre %}
+                    <a href="{% url 'catalog:book_detail' other.slug %}"><span>{{ other.title }}</span><span>by {{ other.author }} ↗</span></a>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+</section>
+{% endblock %}

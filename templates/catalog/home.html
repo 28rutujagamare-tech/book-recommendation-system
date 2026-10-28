@@ -1,0 +1,124 @@
+{% extends "catalog/base.html" %}
+{% block title %}{% if is_search %}{{ query }} books{% else %}Find your next good read{% endif %} — Folio{% endblock %}
+{% block content %}
+<section class="hero">
+    <div class="hero-copy">
+        <p class="eyebrow"><span class="eyebrow-line"></span> YOUR NEXT CHAPTER STARTS HERE</p>
+        <h1>A good book<br>changes <em>everything.</em></h1>
+        <p class="hero-description">Tell us what you love to read. We’ll find a few stories worth getting lost in.</p>
+        <form class="search-form" action="{% url 'catalog:home' %}" method="get">
+            <label class="sr-only" for="genre-search">Search by book title or genre</label>
+            <span class="search-icon" aria-hidden="true">⌕</span>
+            <input id="genre-search" type="search" name="q" list="genre-options" value="{{ query }}" placeholder="Search a book title or genre…" autocomplete="off">
+            <datalist id="genre-options">
+                {% for genre in genres %}<option value="{{ genre.name }}">{% endfor %}
+            </datalist>
+            <button type="submit">Find books <span aria-hidden="true">→</span></button>
+        </form>
+        <div class="popular-genres">
+            <span>START WITH:</span>
+            {% for genre in genres|slice:":4" %}
+                <a href="{% url 'catalog:home' %}?genre={{ genre.name|urlencode }}">{{ genre.name }}</a>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="hero-art" aria-hidden="true">
+        <div class="sun-shape"></div>
+        <div class="hero-book hero-book-back"><span>THE<br>ART OF<br>STORY</span><i></i></div>
+        <div class="hero-book hero-book-front"><span>somewhere<br>between<br>the pages</span><i></i></div>
+        <div class="art-spark spark-one">✳</div>
+        <div class="art-spark spark-two">✦</div>
+        <div class="art-caption">A world<br>waiting inside.</div>
+    </div>
+</section>
+
+<section class="recommendations section-wrap" id="recommendations">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">{% if is_search %}YOUR PERSONAL BOOKSHELF{% elif personalized %}BASED ON YOUR READING PREFERENCES{% else %}A FEW GOOD PLACES TO START{% endif %}</p>
+            <h2>{% if is_search %}Books for <em>{{ query }}</em>{% elif personalized %}Picked for <em>you.</em>{% else %}Reader favorites{% endif %}</h2>
+            {% if is_search %}
+                <p class="section-description">
+                    {% if selected_genres %}Matching titles and genres: {% for genre in selected_genres %}{{ genre.name }}{% if not forloop.last %}, {% endif %}{% endfor %}. {% endif %}
+                    Search results for book titles and genres.
+                </p>
+            {% elif personalized %}
+                <p class="section-description">Books that match all your selected genres and themes, plus your other preferences.</p>
+            {% elif selected_genres %}
+                <p class="section-description">
+                    {% for genre in selected_genres %}{{ genre.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                    · Handpicked by genre, with reader ratings to help you choose.
+                </p>
+            {% else %}
+                <p class="section-description">A small selection of stories readers come back to.</p>
+            {% endif %}
+        </div>
+        {% if is_search %}<span class="result-count">{{ result_count }} book{{ result_count|pluralize }} found</span>{% endif %}
+    </div>
+
+    {% if books %}
+        <div class="book-grid">
+            {% for book in books %}
+                <article class="book-card">
+                    <a class="cover-link" href="{% url 'catalog:book_detail' book.slug %}" aria-label="View {{ book.title }}">
+                        {% if book.cover_url %}
+                            <img class="book-cover" src="{{ book.cover_url }}" alt="Cover of {{ book.title }}" loading="lazy">
+                        {% else %}
+                            <div class="book-cover cover-art cover-{{ forloop.counter0|divisibleby:5|yesno:'plum,clay' }}">
+                                <span class="cover-kicker">{{ book.genre.name }}</span>
+                                <strong>{{ book.title }}</strong>
+                                <span class="cover-author">{{ book.author }}</span>
+                                <i aria-hidden="true"></i>
+                            </div>
+                        {% endif %}
+                    </a>
+                    <div class="book-meta">
+                        <div class="book-genres">
+                            <a class="genre-label" href="{% url 'catalog:home' %}?genre={{ book.genre.name|urlencode }}">{{ book.genre.name }}</a>
+                            {% for genre in book.additional_genres.all %}
+                                <a class="genre-label" href="{% url 'catalog:home' %}?genre={{ genre.name|urlencode }}">{{ genre.name }}</a>
+                            {% endfor %}
+                        </div>
+                        <h3><a href="{% url 'catalog:book_detail' book.slug %}">{{ book.title }}</a></h3>
+                        <p class="book-author">by {{ book.author }}{% if book.publication_year %} <span>· {{ book.publication_year }}</span>{% endif %}</p>
+                        <div class="rating"><span aria-label="Rating">{{ book.rating }} <span class="star">★</span></span><span class="rating-note">reader rating</span></div>
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    {% elif not error %}
+        <div class="empty-state">
+            <span class="empty-icon" aria-hidden="true">✳</span>
+            <h3>{% if is_search %}No books matched “{{ query }}”.{% elif personalized %}No books match all your preferences yet.{% else %}The bookshelf is getting ready.{% endif %}</h3>
+            <p>{% if is_search %}Try a different book title or genre.{% elif personalized %}Try editing the book tags in admin or choose fewer preferences next time.{% else %}Add some featured books in the admin to get started.{% endif %}</p>
+        </div>
+    {% endif %}
+</section>
+
+<section class="genre-section section-wrap" id="genres">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">FOLLOW YOUR CURIOSITY</p>
+            <h2>Pick a <em>feeling.</em></h2>
+        </div>
+    </div>
+    <div class="genre-grid">
+        {% for genre in genres %}
+            <a class="genre-card genre-card-{{ forloop.counter0|divisibleby:2|yesno:'warm,cool' }}" href="{% url 'catalog:home' %}?genre={{ genre.name|urlencode }}">
+                <span class="genre-number">0{{ forloop.counter|stringformat:"d" }}</span>
+                <span class="genre-card-name">{{ genre.name }}</span>
+                <span class="genre-description">{{ genre.description|default:"Discover a story picked just for this shelf." }}</span>
+                <span class="genre-arrow" aria-hidden="true">↗</span>
+            </a>
+        {% empty %}
+            <p class="section-description">Genres will appear here once they are added in the admin.</p>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="editor-note">
+    <span class="note-asterisk" aria-hidden="true">✳</span>
+    <div><p class="eyebrow">A NOTE ON OUR PICKS</p><h2>Good books.<br><em>No guesswork.</em></h2></div>
+    <p>Every recommendation belongs to the genre you ask for. We sort by editor picks and reader ratings — no algorithms, just a well-loved bookshelf.</p>
+</section>
+{% endblock %}

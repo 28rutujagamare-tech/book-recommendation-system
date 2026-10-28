@@ -1,0 +1,41 @@
+{% extends "catalog/base.html" %}
+{% block title %}Create account — Folio{% endblock %}
+{% block content %}
+<section class="account-page">
+    <div class="account-card">
+        <p class="eyebrow">JOIN THE READING COMMUNITY</p>
+        <h1>Create your account</h1>
+        <p class="account-intro">Tell us what you love and we’ll build a shelf around your reading preferences.</p>
+        <form method="post" class="account-form">
+            {% csrf_token %}
+            {% for field in form %}
+                {% if field.name == "username" or field.name == "email" or field.name == "password1" or field.name == "password2" %}
+                    <div class="form-field">
+                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.help_text %}<div class="field-help">{{ field.help_text|safe }}</div>{% endif %}
+                        {% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+                    </div>
+                {% endif %}
+            {% endfor %}
+            <div class="preference-fields">
+                <h2>Your reading preferences</h2>
+                {% for field in form %}
+                    {% if field.name == "favorite_genres" or field.name == "favorite_authors" or field.name == "preferred_language" or field.name == "preferred_length" or field.name == "favorite_themes" %}
+                        <div class="form-field preference-field">
+                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.help_text %}<div class="field-help">{{ field.help_text }}</div>{% endif %}
+                            {% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+                <p class="field-help">Preferences are optional. Selected genres and themes are matched together: recommended books must include every one you choose.</p>
+            </div>
+            {% for error in form.non_field_errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+            <button class="primary-button" type="submit">Create account <span aria-hidden="true">→</span></button>
+        </form>
+        <p class="account-switch">Already have an account? <a href="{% url 'catalog:login' %}">Log in</a></p>
+    </div>
+</section>
+{% endblock %}
